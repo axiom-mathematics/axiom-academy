@@ -1,0 +1,119 @@
+{
+  "schema": "axiom-set/v1",
+  "id": "calc3-vectors",
+  "title": "Calculus III: Vectors and planes",
+  "course": "Calculus III",
+  "topic": "Vectors and planes",
+  "problems": [
+    {
+      "id": "dot-product",
+      "topic": "Dot product",
+      "prompt": "Compute $\\langle 1,2,-1\\rangle\\cdot\\langle 3,0,4\\rangle$.",
+      "answer": "-1",
+      "answer_kind": "expression",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "The dot product is a single number, not another vector. Matching components are multiplied, then those products are added."
+        },
+        {
+          "level": 2,
+          "text": "Write the three products of matching components. One of them is zero. Add all three, and keep the sign of the last product."
+        },
+        {
+          "level": 3,
+          "text": "$1\\cdot 3+2\\cdot 0+(-1)\\cdot 4=-1$."
+        }
+      ]
+    },
+    {
+      "id": "cross-product",
+      "topic": "Cross product",
+      "prompt": "Compute $\\langle 1,2,-1\\rangle\\times\\langle 3,0,4\\rangle$.",
+      "answer": "<8,-7,-6>",
+      "answer_kind": "vector",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "The cross product is a vector perpendicular to both inputs. Each component is a $2\\times 2$ determinant from the other rows."
+        },
+        {
+          "level": 2,
+          "text": "The first component uses the lower-right square. The middle component is subtracted, not added. The last component uses the first two columns."
+        },
+        {
+          "level": 3,
+          "text": "The cross product is $\\langle 8,-7,-6\\rangle$."
+        }
+      ]
+    },
+    {
+      "id": "plane-equation",
+      "topic": "Planes",
+      "prompt": "Find the equation of the plane through $(1,0,-2)$ with normal vector $\\langle 2,-1,3\\rangle$.",
+      "answer": "2*x-y+3*z+4=0",
+      "answer_kind": "equation",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "A normal and a point determine the plane. Every vector that lies in the plane is perpendicular to the normal, so their dot product is zero."
+        },
+        {
+          "level": 2,
+          "text": "Write $\\langle 2,-1,3\\rangle\\cdot\\langle x-1,\\, y-0,\\, z-(-2)\\rangle=0$, then expand and collect like terms. A constant multiple of the same equation is still the plane."
+        },
+        {
+          "level": 3,
+          "text": "$2(x-1)-y+3(z+2)=0$, which simplifies to $2x-y+3z+4=0$."
+        }
+      ]
+    },
+    {
+      "id": "point-plane-distance",
+      "topic": "Planes",
+      "prompt": "Find the distance from the point $(1,2,2)$ to the plane $x+2y-2z+3=0$.",
+      "answer": "4/3",
+      "answer_kind": "expression",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "Distance to a plane is the length of the projection onto the normal. Take an absolute value so the distance is not negative."
+        },
+        {
+          "level": 2,
+          "text": "Evaluate $x+2y-2z+3$ at $(1,2,2)$, take the absolute value, and divide by the magnitude of $\\langle 1,2,-2\\rangle$."
+        },
+        {
+          "level": 3,
+          "text": "$|1+4-4+3|/\\sqrt{1+4+4}=4/3$."
+        }
+      ]
+    },
+    {
+      "id": "line-point",
+      "topic": "Lines",
+      "prompt": "A line passes through $(1,-1,2)$ with direction $\\langle 2,1,-1\\rangle$. Give the point on the line at $t=1$.",
+      "answer": "(3,0,1)",
+      "answer_kind": "point",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "A line is a starting point plus a scalar times a direction. You only need the point that belongs to this one value of the parameter."
+        },
+        {
+          "level": 2,
+          "text": "Add one copy of the direction $\\langle 2,1,-1\\rangle$ to the point $(1,-1,2)$. Keep the three components in order."
+        },
+        {
+          "level": 3,
+          "text": "$(1,-1,2)+\\langle 2,1,-1\\rangle=(3,0,1)$."
+        }
+      ]
+    }
+  ]
+}

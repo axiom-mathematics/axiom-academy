@@ -1,0 +1,119 @@
+{
+  "schema": "axiom-set/v1",
+  "id": "precalc-conics",
+  "title": "Precalculus: Conic sections",
+  "course": "Precalculus",
+  "topic": "Conics",
+  "problems": [
+    {
+      "id": "circle-standard",
+      "topic": "Circles",
+      "prompt": "Write the equation of the circle with center $(2,-3)$ and radius $5$.",
+      "answer": "(x-2)^2+(y+3)^2=25",
+      "answer_kind": "equation",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "A circle is every point at a fixed distance from the center. The standard form is built from that center and that distance. You do not need to expand yet."
+        },
+        {
+          "level": 2,
+          "text": "Use $(x-h)^2+(y-k)^2=r^2$. The center is $(2,-3)$, so the $y$ parentheses change sign. Square the radius instead of leaving it as a bare $5$."
+        },
+        {
+          "level": 3,
+          "text": "Center $(2,-3)$ and radius $5$ give $(x-2)^2+(y+3)^2=25$."
+        }
+      ]
+    },
+    {
+      "id": "ellipse-standard",
+      "topic": "Ellipses",
+      "prompt": "Write the equation of the ellipse centered at the origin with vertices $(\\pm 5,0)$ and co-vertices $(0,\\pm 3)$.",
+      "answer": "x^2/25+y^2/9=1",
+      "answer_kind": "equation",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "An origin-centered ellipse puts the larger denominator under the longer axis. Decide which axis is major before you write fractions."
+        },
+        {
+          "level": 2,
+          "text": "The vertices $(\\pm 5,0)$ give $a^2$, and the co-vertices $(0,\\pm 3)$ give $b^2$. Because the major axis is horizontal, the larger denominator belongs under $x$."
+        },
+        {
+          "level": 3,
+          "text": "Here $a=5$ and $b=3$, so the equation is $x^2/25+y^2/9=1$."
+        }
+      ]
+    },
+    {
+      "id": "parabola-focus",
+      "topic": "Parabolas",
+      "prompt": "A parabola has focus $(0,2)$ and directrix $y=-2$. Write its equation.",
+      "answer": "x^2=8*y",
+      "answer_kind": "equation",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "A parabola is the set of points equidistant from the focus and the directrix. Locate the vertex halfway between them before choosing a formula."
+        },
+        {
+          "level": 2,
+          "text": "The vertex is the origin and the parabola opens upward. Use $x^2=4py$, where $p$ is the distance from the vertex to the focus. Do not stop after finding $p$."
+        },
+        {
+          "level": 3,
+          "text": "The distance from the vertex to the focus is $2$, so $p=2$ and $x^2=8y$."
+        }
+      ]
+    },
+    {
+      "id": "hyperbola-c",
+      "topic": "Hyperbolas",
+      "prompt": "For the hyperbola $x^2/4-y^2/9=1$, find $c$, the distance from the center to a focus.",
+      "answer": "sqrt(13)",
+      "answer_kind": "expression",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "On a horizontal hyperbola the foci sit farther from the center than the vertices. $c$ is not $a$ and it is not $b$."
+        },
+        {
+          "level": 2,
+          "text": "For this hyperbola, $c^2=a^2+b^2$. Read $a^2$ and $b^2$ from the denominators and add them before you take a square root."
+        },
+        {
+          "level": 3,
+          "text": "$a^2=4$ and $b^2=9$, so $c=\\sqrt{13}$."
+        }
+      ]
+    },
+    {
+      "id": "circle-complete-square",
+      "topic": "Circles",
+      "prompt": "Rewrite $x^2+y^2-6x+2y-6=0$ in standard form.",
+      "answer": "(x-3)^2+(y+1)^2=16",
+      "answer_kind": "equation",
+      "tolerance": 0.001,
+      "hints": [
+        {
+          "level": 1,
+          "text": "Complete the square in $x$ and in $y$ separately. The numbers you add to keep the equation balanced become part of the radius squared."
+        },
+        {
+          "level": 2,
+          "text": "Group the $x$ terms and the $y$ terms. Half of the $x$ coefficient is $-3$, and half of the $y$ coefficient is $1$. Add those squares to both sides."
+        },
+        {
+          "level": 3,
+          "text": "Completing the square yields $(x-3)^2+(y+1)^2=16$."
+        }
+      ]
+    }
+  ]
+}

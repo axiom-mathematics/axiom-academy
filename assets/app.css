@@ -1,0 +1,123 @@
+:root {
+  color-scheme: light;
+  --plum-950: #17072f;
+  --plum-900: #22103f;
+  --ink-900: #2b1745;
+  --ink-700: #503276;
+  --brand-600: #432d6b;
+  --brand-100: #efebfe;
+  --leaf-100: #e1f6ea;
+  --leaf-300: #a0d8ba;
+  --leaf-600: #286448;
+  --leaf-700: #173b2a;
+  --cream-50: #faf8fc;
+  --cream-100: #f4f1f9;
+  --line: #e7e0f0;
+  --danger: #be123c;
+  --card: 0.875rem;
+  --sans: "Geist", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --question: "Source Serif 4", Charter, Cambria, Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--cream-50);
+  color: var(--ink-900);
+  font-family: var(--sans);
+}
+.question { font-family: var(--question); }
+header.bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--plum-900) 95%, transparent);
+  color: white;
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+header.bar img { width: 2.25rem; height: 2.25rem; }
+header.bar strong { font-size: 0.92rem; }
+main { max-width: 42rem; margin: 0 auto; padding: 1.25rem 1rem 6rem; }
+.eyebrow {
+  margin: 0;
+  color: var(--leaf-600);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+h1 { font-family: var(--question); font-size: clamp(1.7rem, 5vw, 2.2rem); line-height: 1.15; margin: 0.25rem 0 0.4rem; }
+.lede { color: var(--ink-700); margin-top: 0; }
+.card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--card);
+  padding: 1rem;
+  margin-top: 0.9rem;
+}
+.set-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 1rem;
+  border-radius: var(--card);
+  border: 1px solid var(--line);
+  background: white;
+  margin-top: 0.75rem;
+}
+.set-link:hover { border-color: #c8baed; }
+.dots { display: flex; gap: 0.4rem; overflow-x: auto; margin: 0.8rem 0; }
+.dots button {
+  min-width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--ink-700);
+  font-weight: 700;
+}
+.dots button[aria-current="true"] { background: var(--brand-600); color: white; border-color: var(--brand-600); }
+.dots button.ok { background: var(--leaf-100); color: var(--leaf-700); border-color: #70bc96; }
+label { display: block; font-weight: 650; margin: 0.8rem 0 0.35rem; }
+textarea, input[type="text"] {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  padding: 0.75rem;
+  font: 1rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--ink-900);
+  background: white;
+}
+textarea { min-height: 6.5rem; }
+.preview { background: var(--cream-100); border-radius: 0.75rem; padding: 0.75rem; margin-top: 0.6rem; }
+.preview p { margin: 0.2rem 0 0; color: var(--ink-700); font-size: 0.9rem; }
+.hint { background: var(--cream-100); border-radius: 0.75rem; padding: 0.75rem; margin-top: 0.55rem; }
+.actions { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.9rem; }
+button.primary, button.ghost, a.primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 3rem;
+  border-radius: 0.7rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+button.primary, a.primary { background: var(--brand-600); color: white; }
+button.ghost { background: white; color: var(--plum-900); border-color: var(--line); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+.feedback { border-radius: 0.75rem; padding: 0.75rem; margin-top: 0.8rem; font-weight: 600; }
+.feedback.correct { background: var(--leaf-100); color: var(--leaf-700); }
+.feedback.incorrect { background: #fff1f2; color: var(--danger); }
+.feedback.invalid { background: var(--brand-100); color: var(--ink-900); }
+.note { color: var(--ink-700); font-size: 0.8rem; }
+.name-row { display: flex; gap: 0.5rem; }
+@media (min-width: 640px) {
+  .actions { flex-direction: row; }
+  .actions > * { flex: 1; }
+}
