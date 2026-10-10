@@ -102,7 +102,6 @@ function catalog() {
   const app = document.querySelector("#app");
   const saved = attempts().length;
   app.innerHTML = `
-    <p class="eyebrow">Axiom Academy</p>
     <h1>Choose your assignment</h1>
     <p class="lede">Open the link Steve sent, or pick a published set. Your answer is checked in this browser. Nothing is sent until you download or submit the record.</p>
     ${SETS.map((item) => `<a class="set-link" href="?set=${item.id}"><strong>${escapeHtml(item.title)}</strong><p class="note">${item.id}</p></a>`).join("")}
