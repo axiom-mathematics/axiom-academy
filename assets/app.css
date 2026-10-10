@@ -93,6 +93,7 @@ textarea, input[type="text"] {
   background: white;
 }
 textarea { min-height: 6.5rem; }
+.answer-note { margin: 0.45rem 0 0; }
 .preview { background: var(--cream-100); border-radius: 0.75rem; padding: 0.75rem; margin-top: 0.6rem; }
 .preview p { margin: 0.2rem 0 0; color: var(--ink-700); font-size: 0.9rem; }
 .hint { background: var(--cream-100); border-radius: 0.75rem; padding: 0.75rem; margin-top: 0.55rem; }

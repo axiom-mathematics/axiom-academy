@@ -12,6 +12,7 @@
       "answer": "-1",
       "answer_kind": "expression",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,
@@ -34,6 +35,7 @@
       "answer": "<8,-7,-6>",
       "answer_kind": "vector",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,
@@ -56,6 +58,7 @@
       "answer": "2*x-y+3*z+4=0",
       "answer_kind": "equation",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,
@@ -78,6 +81,7 @@
       "answer": "4/3",
       "answer_kind": "expression",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,
@@ -100,6 +104,7 @@
       "answer": "(3,0,1)",
       "answer_kind": "point",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,

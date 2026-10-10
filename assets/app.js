@@ -139,6 +139,7 @@ function practiceMarkup() {
       <h2 class="question" id="prompt"></h2>
       <label for="answer">Your answer</label>
       <textarea id="answer" placeholder="Type math, for example (x-2)^2 + (y+3)^2 = 25">${escapeHtml(state.draft)}</textarea>
+      <p class="note answer-note">${escapeHtml(answerNote(problem))}</p>
       <div class="preview"><p class="note">Preview</p><div id="preview"></div></div>
       <div id="hints"></div>
       <div class="actions">
@@ -152,6 +153,14 @@ function practiceMarkup() {
       <button class="ghost" id="submit" type="button">Submit record</button>
     </div>
     <p class="note" id="status">The first check downloads the math engine. After that, checking stays in this browser.</p>`;
+}
+
+function answerNote(problem) {
+  const places = problem.decimal_places ?? 3;
+  if (places < 0) return "Enter an exact answer. A decimal approximation is not accepted for this problem.";
+  if (places === 3) return "Enter an exact answer (like 7/3) or a decimal to three places (like 2.333).";
+  const word = places === 1 ? "place" : "places";
+  return `Enter an exact answer or a decimal accurate to ${places} ${word}.`;
 }
 
 function showPrompt() {
@@ -265,17 +274,20 @@ async function checkAnswer() {
         given: answer,
         tolerance: problem.tolerance ?? 0.001,
         kind: problem.answer_kind || "auto",
+        decimal_places: problem.decimal_places ?? 3,
       }),
     );
     const raw = pyodide.runPython(`
 import json
 from mathcheck import check_answer
 payload = json.loads(axiom_payload)
+places = payload.get("decimal_places", 3)
 result = check_answer(
     payload["expected"],
     payload["given"],
     tolerance=float(payload.get("tolerance") or 0.001),
     kind=payload.get("kind") or "auto",
+    decimal_places=int(places) if places is not None else 3,
 )
 json.dumps(result.as_dict())
 `);

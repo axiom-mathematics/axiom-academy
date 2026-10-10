@@ -3,11 +3,16 @@
 SymPy decides correctness. An LLM is never consulted. The same module is
 copied to ``student-pages/mathcheck.py`` and executed in the browser with
 Pyodide, so keep this file free of application imports.
+
+A numeric answer may be exact, or a decimal that is accurate to three places
+after the decimal point, rounded or truncated. That is the default. A problem
+can require exact form only, or a different number of places.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP, localcontext
 import re
 from typing import Any
 
@@ -42,12 +47,52 @@ class CheckResult:
         }
 
 
+def normalize_decimal_places(value: int | None) -> int | None:
+    """``None`` and omitted both mean three places. A negative value means exact only."""
+    if value is None:
+        return 3
+    number = int(value)
+    if number < 0:
+        return None
+    return number
+
+
+def answer_note(decimal_places: int | None = 3) -> str:
+    """The line shown under a student's answer box."""
+    places = normalize_decimal_places(decimal_places)
+    if places is None:
+        return "Enter an exact answer. A decimal approximation is not accepted for this problem."
+    if places == 3:
+        return "Enter an exact answer (like 7/3) or a decimal to three places (like 2.333)."
+    word = "place" if places == 1 else "places"
+    return f"Enter an exact answer or a decimal accurate to {places} {word}."
+
+
+def decimal_preview(answer: str, *, kind: str = "auto", decimal_places: int | None = 3) -> str | None:
+    """Three-place (or N-place) form of a numeric key, for the instructor.
+
+    Returns ``None`` when the key is not a number, point, vector, interval, or set of numbers,
+    and when the problem is exact-only.
+    """
+    places = normalize_decimal_places(decimal_places)
+    if places is None or not str(answer or "").strip():
+        return None
+    try:
+        text = preprocess(answer)
+        tagged = interpret(text, kind)
+    except ValueError:
+        return None
+    rendered = _preview_value(text, tagged, places)
+    return rendered or None
+
+
 def check_answer(
     expected: str,
     given: str,
     *,
     tolerance: float = 1e-3,
     kind: str = "auto",
+    decimal_places: int | None = 3,
 ) -> CheckResult:
     """Compare ``given`` with ``expected``.
 
@@ -80,13 +125,26 @@ def check_answer(
             )
         exp_value, got_value = converted
 
+    places = normalize_decimal_places(decimal_places)
+    notes: list[str] = []
     try:
-        same = _equivalent(exp_value, got_value, tolerance)
+        same = _equivalent(
+            exp_value,
+            got_value,
+            tolerance,
+            places,
+            preprocess(str(expected)),
+            preprocess(str(given)),
+            notes,
+        )
     except ValueError as exc:
         return CheckResult("invalid", str(exc), equivalent=None)
 
     if same:
         return CheckResult("correct", "That's equivalent.", error_category=None, equivalent=True)
+
+    if notes:
+        return CheckResult("incorrect", notes[0], error_category="decimal_places", equivalent=False)
 
     category = _categorize(exp_value, got_value, tolerance)
     return CheckResult(
@@ -379,15 +437,25 @@ def _assignment_symbol(text: str) -> str | None:
     return None
 
 
-def _parse_vector(text: str) -> Tuple:
+def _vector_inner(text: str) -> str | None:
+    """Inner text of a point or vector, including parenthesized coordinates.
+
+    An open interval uses the same parentheses, so this is only for answers
+    already classified as points or vectors.
+    """
     body = text.strip()
     if _is_vector(body):
-        inner = body[1:-1]
-    elif body.startswith("(") and body.endswith(")") and "," in body:
-        inner = body[1:-1]
-    elif body.startswith("[") and body.endswith("]") and "," in body and not _is_interval(body):
-        inner = body[1:-1]
-    else:
+        return body[1:-1]
+    if body.startswith("(") and body.endswith(")") and "," in body:
+        return body[1:-1]
+    if body.startswith("[") and body.endswith("]") and "," in body and not _is_interval(body):
+        return body[1:-1]
+    return None
+
+
+def _parse_vector(text: str) -> Tuple:
+    inner = _vector_inner(text)
+    if inner is None:
         raise ValueError(
             f"Couldn't read {text!r} as a point or vector. Use commas, like <1, -2, 3> or (1, -2)."
         )
@@ -574,23 +642,388 @@ def _relation_to_interval(relation: sp.Relational) -> Interval | None:
     return None
 
 
-def _equivalent(expected: tuple[str, Any], given: tuple[str, Any], tolerance: float) -> bool:
+def _equivalent(
+    expected: tuple[str, Any],
+    given: tuple[str, Any],
+    tolerance: float,
+    places: int | None,
+    expected_raw: str,
+    given_raw: str,
+    notes: list[str],
+) -> bool:
     kind, left, right = expected[0], expected[1], given[1]
     if kind == "expr":
-        return _exprs_equivalent(left, right, tolerance)
+        return _status_ok(_values_match(left, right, given_raw, places, tolerance), places, notes)
     if kind == "vector":
-        if len(left) != len(right):
+        got_parts = _component_texts(given_raw)
+        if len(left) != len(right) or got_parts is None or len(got_parts) != len(right):
             return False
-        return all(_exprs_equivalent(a, b, tolerance) for a, b in zip(left, right))
+        statuses = [
+            _values_match(exp, got, raw, places, tolerance)
+            for exp, got, raw in zip(left, right, got_parts)
+        ]
+        return _combine_statuses(statuses, places, notes)
     if kind == "set":
-        return _sets_equivalent(left, right, tolerance)
+        if _sets_equivalent(left, right, tolerance):
+            return True
+        return _members_decimal(expected_raw, given_raw, places, tolerance, notes)
     if kind == "interval":
-        return _sets_equivalent(left, right, tolerance)
+        if _sets_equivalent(left, right, tolerance):
+            return True
+        return _intervals_decimal(expected_raw, given_raw, places, tolerance, notes)
     if kind == "equation":
-        return _equations_equivalent(left, right, tolerance)
+        if _equations_equivalent(left, right, tolerance):
+            return True
+        return _equation_decimal(left, right, given_raw, places, tolerance, notes)
     if kind == "relation":
         return _relations_equivalent(left, right)
     raise ValueError(f"Cannot compare {kind} answers.")
+
+
+def _status_ok(status: str, places: int | None, notes: list[str]) -> bool:
+    if status == "ok":
+        return True
+    if status == "too_few":
+        notes.append(_too_few_message(places))
+    return False
+
+
+def _combine_statuses(statuses: list[str], places: int | None, notes: list[str]) -> bool:
+    if statuses and all(status == "ok" for status in statuses):
+        return True
+    if any(status == "no" for status in statuses):
+        return False
+    if any(status == "too_few" for status in statuses):
+        notes.append(_too_few_message(places))
+    return False
+
+
+def _too_few_message(places: int | None) -> str:
+    count = 3 if places is None else places
+    word = "place" if count == 1 else "places"
+    return (
+        f"Not quite. That decimal needs {count} {word} after the decimal point. "
+        "An exact value is fine too."
+    )
+
+
+def _values_match(
+    expected: sp.Expr,
+    given: sp.Expr,
+    given_raw: str,
+    places: int | None,
+    tolerance: float,
+) -> str:
+    if _exprs_equivalent(expected, given, tolerance):
+        return "ok"
+    if places is None or not _is_numeric(expected) or not _is_numeric(given):
+        return "no"
+    verdict = _grade_literal(expected, given_raw, places)
+    if verdict == "ok":
+        return "ok"
+    if verdict == "too_few":
+        return "too_few"
+    return "no"
+
+
+_DECIMAL_LITERAL = re.compile(r"[+-]?(?:\d+\.\d+|\.\d+|\d+)")
+
+
+def _decimal_literal(text: str) -> tuple[Decimal, int] | None:
+    token = text.strip().replace(" ", "")
+    if not re.fullmatch(r"[+-]?(?:\d+\.\d+|\.\d+|\d+)", token):
+        return None
+    if "." in token.lstrip("+-"):
+        places = len(token.lstrip("+-").split(".", 1)[1])
+    else:
+        places = 0
+    return Decimal(token), places
+
+
+def _exact_decimal(expr: sp.Expr) -> tuple[Decimal, int | None] | None:
+    """Return the exact value and how many places it takes to terminate.
+
+    ``None`` for the place count means the value does not terminate.
+    """
+    simplified = sp.simplify(expr)
+    if not _is_numeric(simplified):
+        return None
+    if simplified in (sp.oo, -sp.oo) or simplified.has(sp.oo):
+        return None
+    if bool(getattr(simplified, "is_rational", False)):
+        rational = sp.Rational(simplified)
+        with localcontext() as ctx:
+            ctx.prec = 80
+            value = Decimal(int(rational.p)) / Decimal(int(rational.q))
+        return value, _terminating_places(rational)
+    shown = str(sp.N(simplified, 70))
+    if "." in shown and "e" not in shown.lower():
+        shown = shown[:-1]
+    return Decimal(shown), None
+
+
+def _terminating_places(rational: sp.Rational) -> int | None:
+    denominator = abs(int(rational.q))
+    twos = fives = 0
+    while denominator % 2 == 0:
+        denominator //= 2
+        twos += 1
+    while denominator % 5 == 0:
+        denominator //= 5
+        fives += 1
+    if denominator != 1:
+        return None
+    return max(twos, fives)
+
+
+def _chop(value: Decimal, places: int, rounding: str) -> Decimal:
+    quant = Decimal(1).scaleb(-places) if places else Decimal(1)
+    with localcontext() as ctx:
+        ctx.prec = max(80, places + 20)
+        ctx.rounding = rounding
+        return +value.quantize(quant)
+
+
+def _grade_literal(expected: sp.Expr, given_raw: str, places: int) -> str:
+    parsed = _decimal_literal(given_raw)
+    exact = _exact_decimal(expected)
+    if parsed is None or exact is None:
+        return "not_decimal"
+    student_value, written = parsed
+    exact_value, terminated = exact
+    if student_value == exact_value:
+        return "ok"
+    if written < places:
+        if terminated is not None and written >= terminated and student_value == exact_value:
+            return "ok"
+        rounded = _chop(exact_value, written, ROUND_HALF_UP)
+        truncated = _chop(exact_value, written, ROUND_DOWN)
+        if student_value == rounded or student_value == truncated:
+            return "too_few"
+        return "mismatch"
+    rounded = _chop(exact_value, written, ROUND_HALF_UP)
+    truncated = _chop(exact_value, written, ROUND_DOWN)
+    if student_value == rounded or student_value == truncated:
+        return "ok"
+    return "mismatch"
+
+
+def _component_texts(text: str) -> list[str] | None:
+    inner = _vector_inner(text)
+    if inner is None:
+        return None
+    parts = [part.strip() for part in _split_top(inner, ",") if part.strip()]
+    return parts or None
+
+
+def _member_texts(text: str) -> list[str] | None:
+    body = text.strip()
+    if _is_set(body):
+        inner = body[1:-1].strip()
+        if not inner:
+            return []
+        return [part.strip() for part in _split_top(inner, ",") if part.strip()]
+    pieces = _split_or(body)
+    if len(pieces) >= 2 and all(_assignment_symbol(piece) for piece in pieces):
+        return [_split_top(piece, "=")[1].strip() for piece in pieces]
+    return None
+
+
+def _members_decimal(
+    expected_raw: str,
+    given_raw: str,
+    places: int | None,
+    tolerance: float,
+    notes: list[str],
+) -> bool:
+    expected_parts = _member_texts(expected_raw)
+    given_parts = _member_texts(given_raw)
+    if expected_parts is None or given_parts is None or len(expected_parts) != len(given_parts):
+        return False
+    remaining = given_parts[:]
+    statuses: list[str] = []
+    for part in expected_parts:
+        expected_expr = _parse_expr(part)
+        found = None
+        found_status = "no"
+        for candidate in remaining:
+            status = _values_match(expected_expr, _parse_expr(candidate), candidate, places, tolerance)
+            if status in {"ok", "too_few"}:
+                found = candidate
+                found_status = status
+                break
+        if found is None:
+            return False
+        remaining.remove(found)
+        statuses.append(found_status)
+    return _combine_statuses(statuses, places, notes)
+
+
+def _interval_bounds(text: str) -> list[tuple[str, str, bool, bool]] | None:
+    pieces = _split_union(text.strip())
+    if not pieces or not all(_is_interval(piece) for piece in pieces):
+        return None
+    bounds = []
+    for piece in pieces:
+        left, right = _split_top(piece[1:-1], ",")
+        bounds.append((left.strip(), right.strip(), piece[0] == "(", piece[-1] == ")"))
+    return bounds
+
+
+def _endpoint_status(expected_raw: str, given_raw: str, places: int | None, tolerance: float) -> str:
+    expected_inf = _infinity_sign(expected_raw)
+    given_inf = _infinity_sign(given_raw)
+    if expected_inf is not None or given_inf is not None:
+        return "ok" if expected_inf == given_inf else "no"
+    return _values_match(_parse_endpoint(expected_raw), _parse_endpoint(given_raw), given_raw, places, tolerance)
+
+
+def _infinity_sign(text: str) -> int | None:
+    token = text.strip().lower()
+    if token in {"oo", "infinity", "inf", "+oo", "+infinity"}:
+        return 1
+    if token in {"-oo", "-infinity", "-inf"}:
+        return -1
+    return None
+
+
+def _intervals_decimal(
+    expected_raw: str,
+    given_raw: str,
+    places: int | None,
+    tolerance: float,
+    notes: list[str],
+) -> bool:
+    expected_bounds = _interval_bounds(expected_raw)
+    given_bounds = _interval_bounds(given_raw)
+    if expected_bounds is None or given_bounds is None or len(expected_bounds) != len(given_bounds):
+        return False
+    remaining = given_bounds[:]
+    statuses: list[str] = []
+    for left, right, left_open, right_open in expected_bounds:
+        found = None
+        found_status = "no"
+        for candidate in remaining:
+            cleft, cright, cleft_open, cright_open = candidate
+            if cleft_open != left_open or cright_open != right_open:
+                continue
+            pair = _combine_pair(
+                _endpoint_status(left, cleft, places, tolerance),
+                _endpoint_status(right, cright, places, tolerance),
+            )
+            if pair in {"ok", "too_few"}:
+                found = candidate
+                found_status = pair
+                break
+        if found is None:
+            return False
+        remaining.remove(found)
+        statuses.append(found_status)
+    return _combine_statuses(statuses, places, notes)
+
+
+def _combine_pair(left: str, right: str) -> str:
+    if left == "no" or right == "no":
+        return "no"
+    if left == "too_few" or right == "too_few":
+        return "too_few"
+    return "ok"
+
+
+def _equation_decimal(
+    expected: sp.Eq,
+    given: sp.Eq,
+    given_raw: str,
+    places: int | None,
+    tolerance: float,
+    notes: list[str],
+) -> bool:
+    expected_value = _lone_number(expected)
+    given_value = _lone_number(given)
+    if expected_value is None or given_value is None or "=" not in given_raw:
+        return False
+    given_side = _split_top(given_raw, "=")[-1]
+    return _status_ok(_values_match(expected_value, given_value, given_side, places, tolerance), places, notes)
+
+
+def _lone_number(equation: sp.Eq) -> sp.Expr | None:
+    values = _equation_solution_values(equation)
+    if values is None or len(values) != 1 or not _is_numeric(values[0]):
+        return None
+    return values[0]
+
+
+def _format_places(value: Decimal, places: int, rounding: str) -> str:
+    chopped = _chop(value, places, rounding)
+    return f"{chopped:.{places}f}"
+
+
+def _preview_number(expr: sp.Expr, places: int) -> str | None:
+    exact = _exact_decimal(expr)
+    if exact is None:
+        return None
+    value, _terminated = exact
+    rounded = _format_places(value, places, ROUND_HALF_UP)
+    truncated = _format_places(value, places, ROUND_DOWN)
+    if rounded == truncated:
+        return rounded
+    return f"{rounded} or {truncated}"
+
+
+def _preview_value(text: str, tagged: tuple[str, Any], places: int) -> str | None:
+    kind, value = tagged
+    if kind == "expr" and _is_numeric(value):
+        return _preview_number(value, places)
+    if kind == "vector":
+        shown = [_preview_number(item, places) for item in value]
+        if any(item is None for item in shown):
+            return None
+        opener, closer = ("<", ">") if text.strip().startswith("<") else ("(", ")")
+        return opener + ", ".join(shown) + closer
+    if kind == "set" and isinstance(value, FiniteSet):
+        parts = _member_texts(text)
+        if parts is None:
+            return None
+        shown = []
+        for part in parts:
+            try:
+                expr = _parse_expr(part)
+            except ValueError:
+                return None
+            preview = _preview_number(expr, places)
+            if preview is None:
+                return None
+            shown.append(preview)
+        return "{" + ", ".join(shown) + "}"
+    if kind == "interval":
+        bounds = _interval_bounds(text)
+        if bounds is None:
+            return None
+        pieces = []
+        for left, right, left_open, right_open in bounds:
+            left_shown = _preview_endpoint(left, places)
+            right_shown = _preview_endpoint(right, places)
+            if left_shown is None or right_shown is None:
+                return None
+            pieces.append(
+                f"{'(' if left_open else '['}{left_shown}, {right_shown}{')' if right_open else ']'}"
+            )
+        return " U ".join(pieces)
+    if kind == "equation":
+        number = _lone_number(value)
+        if number is None:
+            return None
+        return _preview_number(number, places)
+    return None
+
+
+def _preview_endpoint(text: str, places: int) -> str | None:
+    if _infinity_sign(text) is not None:
+        return text.strip()
+    try:
+        return _preview_number(_parse_endpoint(text), places)
+    except ValueError:
+        return None
 
 
 def _numbers_close(left: sp.Expr, right: sp.Expr, tolerance: float) -> bool:
@@ -623,7 +1056,7 @@ def _exprs_equivalent(left: sp.Expr, right: sp.Expr, tolerance: float) -> bool:
             continue
     if getattr(left, "free_symbols", set()) or getattr(right, "free_symbols", set()):
         return _sample_equivalent(left, right, tolerance)
-    return _numbers_close(left, right, tolerance)
+    return False
 
 
 def _sample_equivalent(left: sp.Expr, right: sp.Expr, tolerance: float) -> bool:

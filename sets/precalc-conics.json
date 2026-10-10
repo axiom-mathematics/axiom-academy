@@ -12,6 +12,7 @@
       "answer": "(x-2)^2+(y+3)^2=25",
       "answer_kind": "equation",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,
@@ -34,6 +35,7 @@
       "answer": "x^2/25+y^2/9=1",
       "answer_kind": "equation",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,
@@ -56,6 +58,7 @@
       "answer": "x^2=8*y",
       "answer_kind": "equation",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,
@@ -78,6 +81,7 @@
       "answer": "sqrt(13)",
       "answer_kind": "expression",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,
@@ -100,6 +104,7 @@
       "answer": "(x-3)^2+(y+1)^2=16",
       "answer_kind": "equation",
       "tolerance": 0.001,
+      "decimal_places": 3,
       "hints": [
         {
           "level": 1,
@@ -112,6 +117,29 @@
         {
           "level": 3,
           "text": "Completing the square yields $(x-3)^2+(y+1)^2=16$."
+        }
+      ]
+    },
+    {
+      "id": "slope-two-thirds",
+      "topic": "Lines",
+      "prompt": "A line passes through $(0,0)$ and $(3,2)$. What is its slope?",
+      "answer": "2/3",
+      "answer_kind": "expression",
+      "tolerance": 0.001,
+      "decimal_places": 3,
+      "hints": [
+        {
+          "level": 1,
+          "text": "Slope compares how much the line rises with how far it runs. You can write that comparison as a fraction or as a decimal."
+        },
+        {
+          "level": 2,
+          "text": "From the origin to $(3,2)$, the rise is $2$ and the run is $3$. Write the ratio of those two changes."
+        },
+        {
+          "level": 3,
+          "text": "The slope is $\\dfrac{2}{3}$, which is $0.667$ rounded to three places or $0.666$ truncated."
         }
       ]
     }
